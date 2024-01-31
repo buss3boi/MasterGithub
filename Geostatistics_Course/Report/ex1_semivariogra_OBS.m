@@ -160,9 +160,9 @@ ant = 64; % number of classes in semivariogram
 
 hlag=hegam_precipitation(:,2)
 
-C0 = 10; % 15
+C0 = 17; % 15
 C1 = 40-C0; % C1 = 25
-a= 3500;% 7500
+a= 4425;% 7500
 pr =log(20); %=log(1/(1-.95))=practical range equal to 95% of total variance
 eg = 1; % 1. order exponential
 ch=semivar_mod(hlag,C0,C1,a,pr,eg)

@@ -162,50 +162,50 @@ dy = 100;
 
 %% Ctrl + R comment out. Ctrl + shift + R uncomment
 
-% 
-% 
-% %% Nearest neighbour
-% 
-% %interpolate precipitation by nearest neighbour method (similar to Theissen
-% %polygons
-% ZI_near = griddata(x_obs,y_obs,z_obs,XI,YI,'nearest');
-% 
-% %plot result
-% figure;
-% meshc(XI,YI,ZI_near), hold
-% plot3(x_obs,y_obs,z_obs,'o'), hold off
-% title('Nearest neighbour method');
-% colorbar;
-% 
-% %% Interpolation method
-% 
-% %try other methods, eg. cubic
-% ZI_v4 = griddata(x_obs,y_obs,z_obs,XI,YI,'v4');
-% 
-% %plot result
-% figure;
-% meshc(XI,YI,ZI_v4), hold
-% plot3(x_obs,y_obs,z_obs,'o'), hold off
-% title('Matlab interpolation method v4');
-% colorbar;
-% 
-% %plot vaules in xy-grid
-% figure
-% imagesc(ZI_near);
-% title('Nearest neighbour method');
-% colorbar;
-% 
-% figure
-% imagesc(ZI_v4);
-% title('Matlab interpolation method v4'); % cubic spline
-% colorbar;
-% 
-% %compare the results
-% diff = ZI_near-ZI_v4;
-% %figure
-% %imagesc(diff);
-% %title('Difference between nearest neighbour method and v4');
-% %colorbar;
+
+
+%% Nearest neighbour
+
+%interpolate precipitation by nearest neighbour method (similar to Theissen
+%polygons
+ZI_near = griddata(x_obs,y_obs,z_obs,XI,YI,'nearest');
+
+%plot result
+figure;
+meshc(XI,YI,ZI_near), hold
+plot3(x_obs,y_obs,z_obs,'o'), hold off
+title('Nearest neighbour method');
+colorbar;
+
+%% Interpolation method
+
+%try other methods, eg. cubic
+ZI_v4 = griddata(x_obs,y_obs,z_obs,XI,YI,'v4');
+
+%plot result
+figure;
+meshc(XI,YI,ZI_v4), hold
+plot3(x_obs,y_obs,z_obs,'o'), hold off
+title('Matlab interpolation method v4');
+colorbar;
+
+%plot vaules in xy-grid
+figure
+imagesc(ZI_near);
+title('Nearest neighbour method');
+colorbar;
+
+figure
+imagesc(ZI_v4);
+title('Matlab interpolation method v4'); % cubic spline
+colorbar;
+
+%compare the results
+diff = ZI_near-ZI_v4;
+%figure
+%imagesc(diff);
+%title('Difference between nearest neighbour method and v4');
+%colorbar;
 
 %% Ordinary kriging
 % ordinary kriging in all grid points
@@ -319,98 +319,98 @@ imagesc(real(kerror));     %in one point kriging variance is slightly negative
 colorbar;
 title('Kriging error')
 
-% 
-% 
-% %% Comparisons of models (not printed)
-% 
-% %compare the kriging with nearest neighbour
-% diff2 = z_kriging-ZI_near;
-% %figure
-% %imagesc(diff2);
-% %title('Difference between ordinary kriging and nearest neigbour interpolation method');
-% %colorbar;
-% 
-% %compare the kriging with v4 method
-% diff3 = z_kriging-ZI_v4;
-% %figure
-% %imagesc(diff3);
-% %title('Difference between ordinary kriging and v4 interpolation method');
-% %colorbar;
-% 
-% 
-% %% Regression 
-% %regression is equal to pure nugget 
-% %i.e. ecc=zeros everery where, cf. Goovaerts et al. 2005, p.7
-% [n,m] = size(ecc);
-% ecc_regression = zeros(n,m);
-% eco_regression = [ecc_regression';ones_row];
-% We_regression = (ech^-1)*eco_regression;
-% z_regression = We_regression(1:nn,:)'*z_obs;
-% [n,m] = size(XI);
-% pure_nugget_interpolation = reshape(z_regression',n,m);
-% % but it apply only a horizontal plane 
-% 
-% %this is better (c.f. help > multiple regression)
-% Xr = [ones(size(x_obs)) x_obs y_obs];
-% a = Xr\z_obs;                  
-% regression_surface_2D = a(1)+ a(2)*XI + a(3)*YI;
-% %or
-% %regression_surface_2D = Xr*a;
-% 
-% figure;
-% meshc(XI,YI,regression_surface_2D), hold
-% plot3(x_obs,y_obs,z_obs,'o'), hold off
-% title('Linear regression surface')
-% 
-% 
-% % and second order multiple regression 
-% % which you should avoid because of non-physical values in
-% % extrapolation domain
-% Xr2=[Xr,x_obs.^2,x_obs.*y_obs,y_obs.^2];
-% a2=Xr2\z_obs
-% ZI_reg2 = a2(1) + a2(2)*XI + a2(3)*YI + a2(4)*(XI.*XI) + a2(5)*(XI.*YI) + a2(6)*(YI.*YI);
-% figure;
-% meshc(XI,YI,ZI_reg2); hold;
-% plot3(x_obs,y_obs,z_obs,'o'), hold off
-% title('2.order multiple regression surface')
-% 
-% %% Ordinary kriging with trends from residuals
-% %include 2D trend (in a quasi-scientific way), 
-% %becuase in linear regression residuals are (in principle) random numers 
-% z_regression_points = a(1) + a(2)*x_obs + a(3)*y_obs;
-% % which is equivalent to
-% %z_regression_points = Xr*a;
-% 
-% z_residual = z_obs - z_regression_points;
-% 
-% % use same kriging weights as above
-% z_est_residual = We(1:nn,:)'*z_residual;  
-% 	    % a better approach would be to calculate a new semivariogram
-% 	    % based on the residuals.
-% z_est_residual_grid = reshape(z_est_residual,n,m);
-% z_est_m_trend = z_est_residual_grid + regression_surface_2D;
-% 
-% 
-% figure;
-% meshc(XI,YI,z_est_residual_grid), hold
-% plot3(x_obs,y_obs,z_residual,'o'), hold off
-% title('Ordinary kriging of residuals')
-% 
-% 
-% figure;
-% meshc(XI,YI,z_est_m_trend), hold
-% plot3(x_obs,y_obs,z_obs,'o'), hold off
-% title('Ordinary kriging with trend from linear regression')
+
+
+%% Comparisons of models (not printed)
+
+%compare the kriging with nearest neighbour
+diff2 = z_kriging-ZI_near;
+figure
+imagesc(diff2);
+title('Difference between ordinary kriging and nearest neigbour interpolation method');
+colorbar;
+
+%compare the kriging with v4 method
+diff3 = z_kriging-ZI_v4;
+figure
+imagesc(diff3);
+title('Difference between ordinary kriging and v4 interpolation method');
+colorbar;
+
+
+%% Regression 
+%regression is equal to pure nugget 
+%i.e. ecc=zeros everery where, cf. Goovaerts et al. 2005, p.7
+[n,m] = size(ecc);
+ecc_regression = zeros(n,m);
+eco_regression = [ecc_regression';ones_row];
+We_regression = (ech^-1)*eco_regression;
+z_regression = We_regression(1:nn,:)'*z_obs;
+[n,m] = size(XI);
+pure_nugget_interpolation = reshape(z_regression',n,m);
+% but it apply only a horizontal plane 
+
+%this is better (c.f. help > multiple regression)
+Xr = [ones(size(x_obs)) x_obs y_obs];
+a = Xr\z_obs;                  
+regression_surface_2D = a(1)+ a(2)*XI + a(3)*YI;
+%or
+%regression_surface_2D = Xr*a;
+
+figure;
+meshc(XI,YI,regression_surface_2D), hold
+plot3(x_obs,y_obs,z_obs,'o'), hold off
+title('Linear regression surface')
+
+
+% and second order multiple regression 
+% which you should avoid because of non-physical values in
+% extrapolation domain
+Xr2=[Xr,x_obs.^2,x_obs.*y_obs,y_obs.^2];
+a2=Xr2\z_obs
+ZI_reg2 = a2(1) + a2(2)*XI + a2(3)*YI + a2(4)*(XI.*XI) + a2(5)*(XI.*YI) + a2(6)*(YI.*YI);
+figure;
+meshc(XI,YI,ZI_reg2); hold;
+plot3(x_obs,y_obs,z_obs,'o'), hold off
+title('2.order multiple regression surface')
+
+%% Ordinary kriging with trends from residuals
+%include 2D trend (in a quasi-scientific way), 
+%becuase in linear regression residuals are (in principle) random numers 
+z_regression_points = a(1) + a(2)*x_obs + a(3)*y_obs;
+% which is equivalent to
+%z_regression_points = Xr*a;
+
+z_residual = z_obs - z_regression_points;
+
+% use same kriging weights as above
+z_est_residual = We(1:nn,:)'*z_residual;  
+	    % a better approach would be to calculate a new semivariogram
+	    % based on the residuals.
+z_est_residual_grid = reshape(z_est_residual,n,m);
+z_est_m_trend = z_est_residual_grid + regression_surface_2D;
+
+
+figure;
+meshc(XI,YI,z_est_residual_grid), hold
+plot3(x_obs,y_obs,z_residual,'o'), hold off
+title('Ordinary kriging of residuals')
+
+
+figure;
+meshc(XI,YI,z_est_m_trend), hold
+plot3(x_obs,y_obs,z_obs,'o'), hold off
+title('Ordinary kriging with trend from linear regression')
 
 
 
 %calculate average areal precipitation
 fprintf('\nMean of observations:            %.1f\n',mean(z_obs));
-% fprintf('Pure nugget interpolation:       %.1f\n',sum(sum(pure_nugget_interpolation))/(n*m)); 
-% fprintf('Linear regression surface:       %.1f\n',sum(sum(regression_surface_2D))/(n*m));
-% fprintf('Nearest neigbour interpoloation: %.1f\n',sum(sum(ZI_near))/(n*m));
-% fprintf('MATLAB interpolation v4:         %.1f\n',sum(sum(ZI_v4))/(n*m));
-% fprintf('Kriging with trend included   :  %.1f\n',sum(sum(z_est_m_trend))/(n*m));
+fprintf('Pure nugget interpolation:       %.1f\n',sum(sum(pure_nugget_interpolation))/(n*m)); 
+fprintf('Linear regression surface:       %.1f\n',sum(sum(regression_surface_2D))/(n*m));
+fprintf('Nearest neigbour interpoloation: %.1f\n',sum(sum(ZI_near))/(n*m));
+fprintf('MATLAB interpolation v4:         %.1f\n',sum(sum(ZI_v4))/(n*m));
+fprintf('Kriging with trend included   :  %.1f\n',sum(sum(z_est_m_trend))/(n*m));
 fprintf('Ordinary kriging interpolation:  %.1f\n',sum(sum(z_kriging))/(n*m));
 
 fprintf('Kriging Error:                   %.1f\n',sum(sum(kerror))/(n*m));

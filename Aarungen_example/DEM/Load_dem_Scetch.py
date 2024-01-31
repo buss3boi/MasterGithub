@@ -24,10 +24,7 @@ show(src, cmap='terrain')
 
 geotransform = src.transform
 
-wminx = 254100
-wmaxx = 268000
-wminy = 6620100
-wmaxy = 6628700
+wminx, wmaxx, wminy, wmaxy = 254100, 268000, 6620100, 6628700
 
 window = rasterio.windows.from_bounds(wminx, wminy, wmaxx, wmaxy, geotransform)
    
@@ -47,27 +44,5 @@ show(src, cmap='terrain', ax=ax)
 # Show the subset of the DEM data with cmap 'terrain' on the same axis
 show(subset, cmap='terrain', ax=ax)
 
-# Plot red dots at the corner coordinates on the same axis
-for x, y in window_coords:
-    row, col = src.index(x, y)
-    ax.plot(col, row, 'ro', markersize=5)  # 'ro' denotes red circle markers
-
-# Show the combined image with red dots
-plt.show()
-#With this code, both the original image and the red dots will be displayed on the same plot, and the red dots will appear on top of the image.
 
 
-
-
-
-
-
-
-"""
-
-
-
-# Grid spacing
-dx = 10
-dy = 10
-"""
