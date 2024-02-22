@@ -112,7 +112,7 @@ pprint(variogram_model.parameters)
 
 
 #%% Exponential model
-fig, axes = plt.subplots(1, 3, figsize=(8, 4), sharey=True)
+fig, axes = plt.subplots(1, 2, figsize=(8, 4), sharey=True)
 
 axes[0].set_title('Spherical')
 axes[1].set_title('Exponential')
@@ -210,29 +210,80 @@ def fit_and_plot_variogram(variogram, model_func, initial_guess=None):
     coef, cov = curve_fit(model_func, xdata, ydata, p0=initial_guess)
 
     # Print model parameters
-    print("range: %.2f   sill: %.f   nugget: %.2f" % (coef[0], coef[1], coef[2]))
+    print('Model: {}    range: {:.2f}   sill: {:.1f}   nugget: {:.2f}'.format(model_func.__name__, coef[0], coef[1], coef[2]))
 
     # Generate y values for the fitted model
     xi = np.linspace(xdata[0], xdata[-1], 100)
     yi = [model_func(h, *coef) for h in xi]
 
     # Plot the variogram data and the fitted model
-    plt.plot(xdata, ydata, 'og', label='Experimental')
-    plt.plot(xi, yi, '-b', label='Fitted Model')
+    # plt.plot(xdata, ydata, 'og', label='Experimental')
+    # plt.plot(xi, yi, '-b', label='Fitted Model')
 
-    # Set plot title indicating directional variogram and model
-    plt.title(f'{variogram}')
-    plt.legend()
-    plt.show()
+    # # Set plot title indicating directional variogram and model
+    # plt.title(f'{variogram}')
+    # plt.legend()
+    # plt.show()
     
     return xi, yi, coef
     
 
+# Make the plots 
+
 North_semivar = fit_and_plot_variogram(Vnorth, models.spherical)
+North_semivar_exp = fit_and_plot_variogram(Vnorth, models.exponential)
+North_semivar_gauss = fit_and_plot_variogram(Vnorth, models.gaussian)
+#North_semivar_matern = fit_and_plot_variogram(Vnorth, models.matern)
+
+
+East_semivar = fit_and_plot_variogram(Veast, models.spherical)
+East_semivar_exp = fit_and_plot_variogram(Veast, models.exponential)
+East_semivar_gauss = fit_and_plot_variogram(Veast, models.gaussian)
+
+Noea_semivar = fit_and_plot_variogram(Vnoea, models.spherical)
+Noea_semivar_exp = fit_and_plot_variogram(Vnoea, models.exponential)
+Noea_semivar_gauss = fit_and_plot_variogram(Vnoea, models.gaussian)
+
+Nowe_semivar = fit_and_plot_variogram(Vnowe, models.spherical)
+Nowe_semivar_exp = fit_and_plot_variogram(Vnowe, models.exponential)
+Nowe_semivar_gauss = fit_and_plot_variogram(Vnowe, models.gaussian)
+
 
 
 
 #%% Plot back semivariograms
+
+# North south
+fix, ax = plt.subplots(1,1,figsize=(8,6))
+
+ax.plot(Vnorth.bins, Vnorth.experimental, '.--r', label='North-South')
+ax.plot(North_semivar[0], North_semivar[1], '-y', label='North semivar spherical')
+ax.plot(North_semivar_exp[0], North_semivar_exp[1], '-b', label='North semivar exp')
+ax.plot(North_semivar_gauss[0], North_semivar_gauss[1], '-g', label='North semivar gauss')
+
+ax.set_xlabel('lag [m]')
+ax.set_ylabel('semi-variance (matheron)')
+plt.legend(loc='upper left')
+
+
+# East west
+fix, ax = plt.subplots(1,1,figsize=(8,6))
+
+ax.plot(Veast.bins, Veast.experimental, '.--r', label='East - West')
+ax.plot(East_semivar[0], East_semivar[1], '-y', label='East semivar spherical')
+ax.plot(East_semivar_exp[0], East_semivar_exp[1], '-b', label='East semivar exp')
+ax.plot(East_semivar_gauss[0], East_semivar_gauss[1], '-g', label='East semivar gauss')
+
+ax.set_xlabel('lag [m]')
+ax.set_ylabel('semi-variance (matheron)')
+plt.legend(loc='upper left')
+
+
+
+# From what we can see. The spherical semivariogram hits the best in most cases
+# overall. We are still going to use a grid search to find optimal params
+
+
 
 fix, ax = plt.subplots(1,1,figsize=(8,6))
 
@@ -240,7 +291,11 @@ ax.plot(Vnorth.bins, Vnorth.experimental, '.--r', label='North-South')
 ax.plot(Veast.bins, Veast.experimental, '.--b', label='East-West')
 ax.plot(Vnoea.bins, Vnoea.experimental, '.--g', label='Noea-Sowe')
 ax.plot(Vnowe.bins, Vnowe.experimental, '.--y', label='Nowe-Soea')
+
 ax.plot(North_semivar[0], North_semivar[1], '-r', label='North semivar')
+ax.plot(East_semivar[0], East_semivar[1], '-b', label='North semivar')
+ax.plot(Noea_semivar[0], Noea_semivar[1], '-g', label='North semivar')
+ax.plot(Nowe_semivar[0], Nowe_semivar[1], '-y', label='North semivar')
 
 
 ax.set_xlabel('lag [m]')

@@ -1,8 +1,17 @@
+""" 
+File for loading granada dataset. The dataset will be saved as OBS_XYZ. 
+This file contains X, Y and Z values for the Granada data. Vertical and
+Horizontal corrections has been made. Use grid wyvecx, wyvecy,
+edit the grid size with dx, dy
+"""
+import os
+print(os.getcwd())
+
 import geopandas as gpd
 import pandas as pd
 import numpy as np
 
-#%% Section 1: Read Granada shapefiles, read geotables
+#%% Read Granada shapefiles, read geotables
 fn_grunnvbronn = 'Grunnvannsborehull/GrunnvannBronn_20221130.shp'
 fn_energibronn = 'Grunnvannsborehull/EnergiBronn_20221130.shp'
 
@@ -12,10 +21,12 @@ ENB = gpd.read_file(fn_energibronn)
 # Section 2: Define the bounding box
 wminx, wmaxx = 254100, 268000
 wminy, wmaxy = 6620100, 6628700
+
+# Set the grid box size
 dx, dy = 100, 100
 
-wxvec = np.arange(wminx, wmaxx + dx, dx)
-wyvec = np.arange(wminy, wmaxy + dy, dy)
+wxvec = np.arange(wminx, wmaxx + dx, dx, dtype=np.float64)
+wyvec = np.arange(wminy, wmaxy + dy, dy, dtype=np.float64)
 
 wxgrid, wygrid = np.meshgrid(wxvec, wyvec)
 
@@ -75,33 +86,7 @@ OBS_XYZ = pd.concat([OBS_GRV, OBS_ENB], axis=0)
 OBS_XYZ = OBS_XYZ[(OBS_XYZ['Shape_X'] >= wminx) & (OBS_XYZ['Shape_X'] <= wmaxx) &
                   (OBS_XYZ['Shape_Y'] >= wminy) & (OBS_XYZ['Shape_Y'] <= wmaxy)]
 
-print(OBS_XYZ)
+# print(OBS_XYZ)
+# Print test. PS: it works
 
-
-#%% Kriging
-import numpy as np
-from pykrige.ok import OrdinaryKriging
-
-# Extracting X, Y, and Z values from OBS_XYZ
-x = OBS_XYZ['Shape_X'].values
-y = OBS_XYZ['Shape_Y'].values
-z = OBS_XYZ['blengdber_'].values
-
-# Define a grid to interpolate over (you can adjust the grid dimensions as needed)
-grid_x = np.linspace(min(x), max(x), 100)
-grid_y = np.linspace(min(y), max(y), 100)
-
-# Create the kriging object
-OK = OrdinaryKriging(
-    x,
-    y,
-    z,
-    variogram_model='spherical',  # You can choose a different model if needed
-    verbose=False,
-    enable_plotting=False
-)
-
-# Perform the kriging interpolation
-z_pred, _ = OK.execute('grid', grid_x, grid_y)
-
-# Now, z_pred contains the interpolated values over the grid_x and grid_y
+OBS_XYZ.to_csv('OBS_XYZ.csv', index=False)
