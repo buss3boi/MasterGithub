@@ -4,8 +4,6 @@ This file contains X, Y and Z values for the Granada data. Vertical and
 Horizontal corrections has been made. Use grid wyvecx, wyvecy,
 edit the grid size with dx, dy
 """
-import os
-print(os.getcwd())
 
 import geopandas as gpd
 import pandas as pd
@@ -19,14 +17,14 @@ GRV = gpd.read_file(fn_grunnvbronn)
 ENB = gpd.read_file(fn_energibronn)
 
 # Section 2: Define the bounding box
-wminx, wmaxx = 254100, 268000
-wminy, wmaxy = 6620100, 6628700
+minx, maxx = 254100, 268000
+miny, maxy = 6620100, 6628700
 
 # Set the grid box size
 dx, dy = 100, 100
 
-wxvec = np.arange(wminx, wmaxx + dx, dx, dtype=np.float64)
-wyvec = np.arange(wminy, wmaxy + dy, dy, dtype=np.float64)
+wxvec = np.arange(minx, maxx + dx, dx, dtype=np.float64)
+wyvec = np.arange(miny, maxy + dy, dy, dtype=np.float64)
 
 wxgrid, wygrid = np.meshgrid(wxvec, wyvec)
 
@@ -83,10 +81,28 @@ OBS_ENB = ENB[(~ENB['blengdber_'].isna()) & (ENB['blengdber_'] > 0)][['Shape_X',
 OBS_XYZ = pd.concat([OBS_GRV, OBS_ENB], axis=0)
 
 # Filter out wells outside the area of interest
-OBS_XYZ = OBS_XYZ[(OBS_XYZ['Shape_X'] >= wminx) & (OBS_XYZ['Shape_X'] <= wmaxx) &
-                  (OBS_XYZ['Shape_Y'] >= wminy) & (OBS_XYZ['Shape_Y'] <= wmaxy)]
+OBS_XYZ = OBS_XYZ[(OBS_XYZ['Shape_X'] >= minx) & (OBS_XYZ['Shape_X'] <= maxx) &
+                  (OBS_XYZ['Shape_Y'] >= miny) & (OBS_XYZ['Shape_Y'] <= maxy)]
 
 # print(OBS_XYZ)
 # Print test. PS: it works
 
 OBS_XYZ.to_csv('OBS_XYZ.csv', index=False)
+
+import matplotlib.pyplot as plt
+
+# Assuming gdf is your GeoPandas DataFrame
+fig, ax = plt.subplots(figsize=(15, 9))
+
+# Create a scatter plot
+OBS_XYZ.plot.scatter(x='Shape_X', y='Shape_Y', c='blengdber_', cmap='viridis', s=10, alpha=0.7, ax=ax)
+
+# Set axis labels and title
+ax.set_xlabel('X')
+ax.set_ylabel('Y')
+ax.set_title('Scatter Plot of points from OBS_XYZ')
+
+plt.savefig('OBS_XYZ_scatterpolot.png', dpi=300, bbox_inches='tight')
+
+# Show the plot
+plt.show()

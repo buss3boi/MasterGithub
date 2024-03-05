@@ -16,8 +16,9 @@ shapefile_path = "./Losmasse/LosmasseFlate_20221201.shp"
 gdf = gpd.read_file(shapefile_path)
 
 
-gdf.plot(column='jordart', legend=True)
+gdf.plot(column='jordart', figsize=(18,11), legend=True)
 plt.title('DQM file')
+plt.savefig('DQM_file.png', dpi=300, bbox_inches='tight')
 #jestem gupi 
 # Now, the variable 'gdf' contains your shapefile data
 
@@ -26,20 +27,20 @@ miny, maxy = 6620100, 6628700
 
 # Filter the GeoDataFrame based on the bounding box
 gdf_filtered = gdf.cx[minx:maxx, miny:maxy]
-gdf_filtered.plot(column='jordart', legend=False)
+gdf_filtered.plot(column='jordart', figsize=(20,12), legend=False)
 plt.title('Filtered DQM file')
 
 # Define the classes you want to display
 
 # Definition 1:
 bedr_cover = [12, 13, 43, 100, 101, 110, 130, 140]
-
+# Not all of these classes exists within the dataset
 
 # Filter the GeoDataFrame to include only the desired classes
 gdf_filtered_classes = gdf_filtered[gdf_filtered['jordart'].isin(bedr_cover)]
 
 # Plot the filtered polygons based on the 'jordart' column
-gdf_filtered_classes.plot(column='jordart', legend=False)
+gdf_filtered_classes.plot(column='jordart', figsize=(20,12), legend=False)
 plt.title('Bedrock & thin cover')
 
 
@@ -69,7 +70,7 @@ OBS_XYZ = pd.read_csv(obs_xyz_path)
 
 # Use your_variable in YourScript.py
 print(OBS_XYZ)
-''
+
 
 #%% Filter Polygons based on size
 
@@ -85,67 +86,200 @@ obs_xyz_gdf = gpd.GeoDataFrame(OBS_XYZ, geometry=geometry, crs=gdf_filtered_clas
 
 
 
-
 gdf_filtered_classes['polygon_area'] = gdf_filtered_classes.geometry.area
 
-# Set a threshold area. 5 million excludes the biggest
+# Set a threshold area. 2 million excludes the biggest
 area_threshold = 2000000
 
 # Filter out polygons below the area threshold
-filtered_gdf = gdf_filtered_classes[gdf_filtered_classes['polygon_area'] <= area_threshold]
-filtered_gdf.plot()
+gdf_processed = gdf_filtered_classes[gdf_filtered_classes['polygon_area'] <= area_threshold]
+gdf_processed.plot(figsize=(20,12))
 
-
-### Perform a spatial join
-joined_data = gpd.sjoin(filtered_gdf, obs_xyz_gdf, how="inner", op="contains")
-
-# Count the number of points within each polygon
-point_count_per_polygon = joined_data.groupby(joined_data.index).size().reset_index(name='point_count')
-
-# Merge the point count back to the GeoDataFrame
-gdf_with_point_count = filtered_gdf.merge(point_count_per_polygon, left_index=True, right_on='index')
+plt.savefig('gdf_processed.png', dpi=300, bbox_inches='tight')
 
 
 #%% Plot on gdf file
 
 
 # Plot the polygons all in one colour
-ax = filtered_gdf.plot(column='jordart', color='yellow', legend=False)
+ax = gdf_processed.plot(column='jordart', figsize=(20,12), color='yellow', legend=False)
 plt.plot(ax=ax)
 # Plot the points on top of the polygons
-sctplot = OBS_XYZ.plot.scatter(x='Shape_X', y='Shape_Y', c=OBS_XYZ['blengdber_'], cmap='viridis', ax=ax, s=3, label='OBS_XYZ', legend=False)
+sctplot = OBS_XYZ.plot.scatter(x='Shape_X', y='Shape_Y', c=OBS_XYZ['blengdber_'], cmap='viridis', ax=ax, s=5, label='OBS_XYZ', legend=False)
 
-plt.savefig('output_figure.png', dpi=300, bbox_inches='tight')
+plt.savefig('gdf_scatterplot.png', dpi=300, bbox_inches='tight')
 
 
 
-### Differentiate points on or off the polygons
 
-# Create a new column indicating if a point is within a polygon
-obs_xyz_gdf['within_polygon'] = obs_xyz_gdf.index.isin(joined_data.index_right)
+#### Find Points inside of a Polygon
+ax = gdf_processed.plot(figsize=(18, 11))
 
-# Plot the polygons with color based on point count
-ax = filtered_gdf.plot(color='lightgray', legend=True)
+# Plotting points on top of polygons
+obs_xyz_gdf.plot(ax=ax, color='red', markersize=5)
 
+# Identifying points inside polygons
+points_inside = gpd.sjoin(obs_xyz_gdf, gdf_processed, op='within')
+
+# Plotting points inside polygons with a different color
+points_inside.plot(ax=ax, color='blue', markersize=5)
+
+plt.legend()
+
+plt.show()
+
+
+
+
+# Plotting polygons
+ax = gdf_processed.plot(figsize=(18, 11))
+
+# Identifying polygons with at least one point inside
+polygons_with_points = gpd.sjoin(gdf_processed, obs_xyz_gdf, op='intersects')
+
+# Plotting polygons with at least one point inside
+polygons_with_points.plot(ax=ax, facecolor='none', edgecolor='yellow')
+
+# Plotting all points on top of polygons
+obs_xyz_gdf.plot(ax=ax, color='red', markersize=5)
+
+plt.show()
+
+
+#%% Areas around Polygon points
+
+import geopandas as gpd
+import matplotlib.pyplot as plt
+from shapely.geometry import Point
+
+# Assuming gdf_processed and obs_xyz_gdf are your GeoDataFrames
+# Also assuming you have a given radius (in the same units as your coordinates)
+
+radius = 100  # Adjust this value based on your requirement
+
+# Identifying points inside polygons
+points_inside = gpd.sjoin(obs_xyz_gdf, gdf_processed, op='within')
+
+# Create GeoDataFrame for circles around points inside polygons
+circles_gdf = gpd.GeoDataFrame(geometry=[Point(xy).buffer(radius) for xy in points_inside['geometry']],
+                               crs=obs_xyz_gdf.crs)
+
+# Finding the intersection of circles and polygons
+intersection_areas = gpd.overlay(circles_gdf, gdf_processed, how='intersection')
+
+# Plotting polygons
+ax = gdf_processed.plot(edgecolor='none', figsize=(20, 12))
+
+# Plotting intersection areas
+intersection_areas.plot(ax=ax, facecolor='red', edgecolor='none')
+
+# Plotting points inside polygons with a different color
+points_inside.plot(ax=ax, color='blue', markersize=5)
+
+# Plotting circles around points inside polygons
+circles_gdf.plot(ax=ax, facecolor='none', edgecolor='none')
+
+plt.show()
+
+
+
+
+
+#%% Replace point, grid method
+
+import geopandas as gpd
+import matplotlib.pyplot as plt
+from shapely.geometry import Point
+import numpy as np
+
+# Assuming gdf_processed and obs_xyz_gdf are your GeoDataFrames
+# Also assuming you have a given radius (in the same units as your coordinates)
+
+# Create a grid over the entire map
+# Use min max x y values from bounding box set in the beginning
+grid_size = 100  # Adjust this value based on your requirement
+x_values = np.arange(minx, maxx, grid_size)
+y_values = np.arange(miny, maxy, grid_size)
+
+# Generate a grid of points
+grid_points = gpd.GeoDataFrame(geometry=[Point(x, y) for x in x_values for y in y_values],
+                               crs=gdf_processed.crs)
+
+# Identify grid points that intersect with the intersection areas
+grid_points_inside = gpd.sjoin(grid_points, intersection_areas, op='intersects')
+
+# Remove points inside the intersection areas from obs_xyz_gdf
+obs_xyz_gdf = obs_xyz_gdf[~obs_xyz_gdf['geometry'].isin(points_inside['geometry'])]
+
+# Add new points with Z value 0 at the centers of the grid cells
+new_points = gpd.GeoDataFrame(geometry=grid_points_inside['geometry'], crs=gdf_processed.crs)
+new_points['blengdber_'] = 0
+
+
+# Extract x, y, and z values from the geometry point
+new_points['Shape_X'] = new_points['geometry'].x
+new_points['Shape_Y'] = new_points['geometry'].y
+
+# Drop direct copies of points in new_points
+new_points = new_points.drop_duplicates(subset=['Shape_X', 'Shape_Y', 'blengdber_'], keep='first')
+
+# Add new points with Z value 0 at the centers of the grid cells to obs_xyz_gdf
+obs_xyz_gdf = pd.concat([obs_xyz_gdf, new_points])
+
+
+# Plotting polygons
+ax = gdf_processed.plot(edgecolor='black', figsize=(20, 15))
+
+
+# Plotting circles around points inside polygons
+circles_gdf.plot(ax=ax, facecolor='none', edgecolor='orange')
+
+
+# Plotting points inside polygons with a different color
+points_inside.plot(ax=ax, color='blue', markersize=3)
+
+# Plotting intersection areas in red
+intersection_areas.plot(ax=ax, facecolor='red', edgecolor='red')
+
+# Plotting new points at the centers of grid cells
+new_points.plot(ax=ax, color='green', markersize=5)
+
+plt.savefig('imputed_boreholes.png', dpi=300, bbox_inches='tight')
+
+plt.show()
+
+
+#%% Plot the final preprocessed dataset
+
+
+
+obs_xyz_gdf.to_csv('OBS_XYZ_gdf.csv', index=False)
+
+
+# Plot the polygons all in one colour
+ax = gdf_processed.plot(column='jordart', figsize=(19,12), color='yellow', legend=False)
+plt.plot(ax=ax)
 # Plot the points on top of the polygons
-obs_xyz_gdf.plot.scatter(x='Shape_X', y='Shape_Y', c=obs_xyz_gdf['within_polygon'], cmap='coolwarm', ax=ax, s=3, label='OBS_XYZ', legend=True)
-plt.title('Points on a polygon')
+sctplot = obs_xyz_gdf.plot.scatter(x='Shape_X', y='Shape_Y', c=obs_xyz_gdf['blengdber_'], cmap='viridis', ax=ax, s=5, label='OBS_XYZ', legend=False)
+
+plt.savefig('preprocessed_boreholes.png', dpi=300, bbox_inches='tight')
 
 
-### Differentiate polygons with or without points
-
-# Identify polygons that have at least one point from obs_xyz_gdf
-polygons_with_points = joined_data['index_right'].unique()
-
-# Create a new column indicating if a polygon has at least one point from obs_xyz_gdf
-filtered_gdf['has_points'] = filtered_gdf.index.isin(polygons_with_points)
-
-# Plot the polygons with different colors based on whether they have at least one point
-ax = filtered_gdf.plot(column='has_points', cmap='coolwarm')
-
-# Plot the points on top of the polygons
-obs_xyz_gdf.plot.scatter(x='Shape_X', y='Shape_Y', c=obs_xyz_gdf['within_polygon'], cmap='coolwarm', ax=ax, s=3, label='OBS_XYZ', legend=True)
-plt.title('Polygons with boreholes')
 
 
+
+# Assuming gdf is your GeoPandas DataFrame
+fig, ax = plt.subplots(figsize=(18, 11))
+
+# Create a scatter plot
+obs_xyz_gdf.plot.scatter(x='Shape_X', y='Shape_Y', c='blengdber_', cmap='viridis', s=10, alpha=0.7, ax=ax)
+
+# Set axis labels and title
+ax.set_xlabel('X')
+ax.set_ylabel('Y')
+ax.set_title('Scatter Plot of Points with Color-Coded Z values')
+
+
+# Show the plot
+plt.show()
 

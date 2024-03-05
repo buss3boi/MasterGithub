@@ -289,13 +289,13 @@ fix, ax = plt.subplots(1,1,figsize=(8,6))
 
 ax.plot(Vnorth.bins, Vnorth.experimental, '.--r', label='North-South')
 ax.plot(Veast.bins, Veast.experimental, '.--b', label='East-West')
-ax.plot(Vnoea.bins, Vnoea.experimental, '.--g', label='Noea-Sowe')
-ax.plot(Vnowe.bins, Vnowe.experimental, '.--y', label='Nowe-Soea')
+# ax.plot(Vnoea.bins, Vnoea.experimental, '.--g', label='Noea-Sowe')
+# ax.plot(Vnowe.bins, Vnowe.experimental, '.--y', label='Nowe-Soea')
 
 ax.plot(North_semivar[0], North_semivar[1], '-r', label='North semivar')
 ax.plot(East_semivar[0], East_semivar[1], '-b', label='North semivar')
-ax.plot(Noea_semivar[0], Noea_semivar[1], '-g', label='North semivar')
-ax.plot(Nowe_semivar[0], Nowe_semivar[1], '-y', label='North semivar')
+# ax.plot(Noea_semivar[0], Noea_semivar[1], '-g', label='North semivar')
+# ax.plot(Nowe_semivar[0], Nowe_semivar[1], '-y', label='North semivar')
 
 
 ax.set_xlabel('lag [m]')
