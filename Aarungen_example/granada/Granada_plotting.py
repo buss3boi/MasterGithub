@@ -88,7 +88,7 @@ OBS_XYZ = OBS_XYZ[(OBS_XYZ['Shape_X'] >= minx) & (OBS_XYZ['Shape_X'] <= maxx) &
 # Print test. PS: it works
 
 OBS_XYZ.to_csv('OBS_XYZ.csv', index=False)
-
+"""
 import matplotlib.pyplot as plt
 
 # Assuming gdf is your GeoPandas DataFrame
@@ -106,3 +106,4 @@ plt.savefig('OBS_XYZ_scatterpolot.png', dpi=300, bbox_inches='tight')
 
 # Show the plot
 plt.show()
+"""
