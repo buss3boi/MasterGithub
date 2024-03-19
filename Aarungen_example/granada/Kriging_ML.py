@@ -133,88 +133,107 @@ print(f"Mean Squared Error (MSE): {mse} R^2 : {r2}")
 
 mse_dict = {'Mean':[], 'Median':[], 'Model':[]}
 r2_dict = {'Mean':[], 'Median':[], 'Model':[]}
-for i in range(42, 52):
-    
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=i)
-    
-    
-    ### Mean Method
-    
-    # Calculate the average value of all the Z values. A model needs to be able to beat this
-    average_value = np.mean(y_train)
-    
-    # Create a baseline vector with the same length as y_test filled with the average value
-    baseline_vector = np.full_like(y_test, fill_value=average_value)
-    
-    # Calculate metrics for the baseline vector
-    baseline_mse = mean_squared_error(y_test, baseline_vector)
-    baseline_r2 = r2_score(y_test, baseline_vector)
-    mse_dict['Mean'].append(baseline_mse)
-    r2_dict['Mean'].append(baseline_r2)
-    
-    
-    ### Median Method
-    median_value = np.median(y_train)
-    
-    # Create a baseline vector with the same length as y_test filled with the average value
-    baseline_vector = np.full_like(y_test, fill_value=median_value)
-    
-    # Calculate metrics for the baseline vector
-    baseline_mse = mean_squared_error(y_test, baseline_vector)
-    baseline_r2 = r2_score(y_test, baseline_vector)
-    mse_dict['Median'].append(baseline_mse)
-    r2_dict['Median'].append(baseline_r2)
-    
-    
-    # Create an OrdinaryKriging instance
-    OK = OrdinaryKriging(
-        X_train[:, 0],  # X coordinates from training set
-        X_train[:, 1],  # Y coordinates from training set
-        y_train,        # Z values from training set
-        variogram_model='hole-effect',  # Adjust variogram model as needed
-        verbose=False
-    )
-    
-    z_pred, ss = OK.execute('grid', wxvec, wyvec)
-    
-    # Calculate scaling factors
-    scale_factor_x = (maxx - minx) / (z_pred.shape[1] - 1)
-    scale_factor_y = (maxy - miny) / (z_pred.shape[0] - 1)
-    
-    
-    # Calculate the indices in Wec for each point in Coords
-    indices_x = ((X_test[:, 0] - minx) / scale_factor_x).astype(int)
-    indices_y = ((X_test[:, 1] - miny) / scale_factor_y).astype(int)
-    
-    
-    xtest_values = []
-    
-    # Iterate through each point in X_test and retrieve the corresponding value from z_pred
-    for i in range(len(X_test)):
-        x_idx = indices_x[i]
-        y_idx = indices_y[i]
-        
-        # Append the value from z_pred to the list
-        xtest_values.append(z_pred[y_idx, x_idx])
-    
-    # Convert the list to a NumPy array if needed
-    xtest_values = np.array(xtest_values)
-    
-    # Mean Squared Error (MSE), Mean Absolute Error (MAE), R-squared (R2) score
-    mse = mean_squared_error(y_test, xtest_values)
-    r2 = r2_score(y_test, xtest_values)    
-    mse_dict['Model'].append(mse)
-    r2_dict['Model'].append(r2)
+random_states = range(42, 52)
 
-print("K fold CV Mean performance")
-print(f"Mean Squared Error (MSE): {np.median(mse_dict['Mean'])} R^2 : {np.median(r2_dict['Mean'])}")
+def calc_random_state(random_states):
+    for i in random_states:
+        
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=i)
+        
+        
+        ### Mean Method
+        
+        # Calculate the average value of all the Z values. A model needs to be able to beat this
+        average_value = np.mean(y_test) # y or y_test. Depends on the method
+        # The baseline methods scores equally shit wether it is y_test or straight y
+        
+        # Create a baseline vector with the same length as y_test filled with the average value
+        baseline_vector = np.full_like(y_test, fill_value=average_value)
+        
+        # Calculate metrics for the baseline vector
+        baseline_mse = mean_squared_error(y_test, baseline_vector)
+        baseline_r2 = r2_score(y_test, baseline_vector)
+        mse_dict['Mean'].append(baseline_mse)
+        r2_dict['Mean'].append(baseline_r2)
+        
+        
+        ### Median Method
+        median_value = np.median(y_train)
+        
+        # Create a baseline vector with the same length as y_test filled with the average value
+        baseline_vector = np.full_like(y_test, fill_value=median_value)
+        
+        # Calculate metrics for the baseline vector
+        baseline_mse = mean_squared_error(y_test, baseline_vector)
+        baseline_r2 = r2_score(y_test, baseline_vector)
+        mse_dict['Median'].append(baseline_mse)
+        r2_dict['Median'].append(baseline_r2)
     
-print("K fold CV Median performance")
-print(f"Mean Squared Error (MSE): {np.median(mse_dict['Median'])} R^2 : {np.median(r2_dict['Median'])}")
-    
-print("K fold CV Model performance")
-print(f"Mean Squared Error (MSE): {np.median(mse_dict['Model'])} R^2 : {np.median(r2_dict['Model'])}")
- 
+#calc_random_state(random_states)
+
+
+# Variogram with custom parameters
+variogram_parameters = {'range': 4450, 'sill': 50, 'nugget': 8}
+  
+def validate_kriging(model, variogram_parameters, minx, maxx, miny, maxy, wxvec, wyvec):
+    mse_dict['Model'] = []
+    r2_dict['Model'] = []
+    for i in random_states:
+        
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=i)
+         
+        
+        # Create an OrdinaryKriging instance
+        OK = OrdinaryKriging(
+            X_train[:, 0],  # X coordinates from training set
+            X_train[:, 1],  # Y coordinates from training set
+            y_train,        # Z values from training set
+            variogram_model=model,  # Adjust variogram model as needed
+            variogram_parameters = variogram_parameters, # COMMENT OUT, if no params wanted, Note! With universal params, probably scores better
+            verbose=False
+        )
+        
+        z_pred, ss = OK.execute('grid', wxvec, wyvec)
+        
+        # Calculate scaling factors
+        scale_factor_x = (maxx - minx) / (z_pred.shape[1] - 1)
+        scale_factor_y = (maxy - miny) / (z_pred.shape[0] - 1)
+        
+        
+        # Calculate the indices in Wec for each point in Coords
+        indices_x = ((X_test[:, 0] - minx) / scale_factor_x).astype(int)
+        indices_y = ((X_test[:, 1] - miny) / scale_factor_y).astype(int)
+        
+        
+        xtest_values = []
+        
+        # Iterate through each point in X_test and retrieve the corresponding value from z_pred
+        for i in range(len(X_test)):
+            x_idx = indices_x[i]
+            y_idx = indices_y[i]
+            
+            # Append the value from z_pred to the list
+            xtest_values.append(z_pred[y_idx, x_idx])
+        
+        # Convert the list to a NumPy array if needed
+        xtest_values = np.array(xtest_values)
+        
+        # Mean Squared Error (MSE), Mean Absolute Error (MAE), R-squared (R2) score
+        mse = mean_squared_error(y_test, xtest_values)
+        r2 = r2_score(y_test, xtest_values)    
+        mse_dict['Model'].append(mse)
+        r2_dict['Model'].append(r2)
+
+    print("K fold CV Mean performance")
+    print(f"Mean Squared Error (MSE): {np.median(mse_dict['Mean'])} R^2 : {np.median(r2_dict['Mean'])}")
+        
+    print("K fold CV Median performance")
+    print(f"Mean Squared Error (MSE): {np.median(mse_dict['Median'])} R^2 : {np.median(r2_dict['Median'])}")
+        
+    print("K fold CV Model performance")
+    print(f"Mean Squared Error (MSE): {np.median(mse_dict['Model'])} R^2 : {np.median(r2_dict['Model'])}")
+
+simple_model = validate_kriging('exponential', variogram_parameters, minx, maxx, miny, maxy, wxvec, wyvec)     
 
 # All performances are a median of the 42 - 52 train test splits performance
 
@@ -236,6 +255,11 @@ print(f"Mean Squared Error (MSE): {np.median(mse_dict['Model'])} R^2 : {np.media
 # K fold CV Linear Model performance
 # Mean Squared Error (MSE): 33.02282926712111 R^2 : 0.18453037795086807
 
+# Exponential variogram_parameters = {'range': 3600, 'sill': 47, 'nugget': 6}
+# Mean Squared Error (MSE): 14.383738340266518 R^2 : 0.5996184550176693
+
+# variogram_parameters = {'range': 4450, 'sill': 50, 'nugget': 8}
+# Mean Squared Error (MSE): 14.309030761395832 R^2 : 0.6015761260447632
 
 
 

@@ -50,7 +50,8 @@ plot_dem(z_matrix)
 
 #%% Create the Variogram from GSTAT
 import skgstat as skg
-
+from skgstat import models
+from scipy.optimize import curve_fit
 
 
 
@@ -61,19 +62,18 @@ sampled_coordinates = np.column_stack(np.unravel_index(sampled_indices, z_matrix
 # Extract z values corresponding to sampled points
 sampled_values = z_matrix[sampled_coordinates[:, 0], sampled_coordinates[:, 1]]
 
-
+"""
 # Make the variogram
 variogram_model = skg.Variogram(sampled_coordinates, sampled_values, model="spherical")
 
 variogram_model.plot()
 
-
-variogram_model.distance_difference_plot()
+# This looks like shit dont plot it XD 
+# variogram_model.distance_difference_plot()
 
 
 #%% Variogram models
 
-from skgstat import models
 
 # set estimator back
 variogram_model.estimator = 'matheron'
@@ -82,7 +82,7 @@ variogram_model.model = 'spherical'
 xdata = variogram_model.bins
 ydata = variogram_model.experimental
 
-from scipy.optimize import curve_fit
+
 
 # initial guess - otherwise lm will not find a range
 p0 = [np.mean(xdata), np.mean(ydata), 0]
@@ -168,22 +168,22 @@ print('Spherical effective range:    %.1f' % r_sph)
 print('Exponential effective range:  %.1f' % r_exp)
 print('Gauss effective range:        %.1f' % r_gau)
 print('Matern effective range:       %.1f' % r_mat)
-
+"""
 
 #%% Directional Variogram
 
-Vnorth = skg.DirectionalVariogram(sampled_coordinates, sampled_values, azimuth=90, tolerance=60, maxlag=1000, n_lags=20)
+Vnorth = skg.DirectionalVariogram(sampled_coordinates, sampled_values, azimuth=90, tolerance=60, maxlag=0.5, n_lags=20)
 
-Veast = skg.DirectionalVariogram(sampled_coordinates, sampled_values, azimuth=0, tolerance=60, maxlag=1000, n_lags=20)
+Veast = skg.DirectionalVariogram(sampled_coordinates, sampled_values, azimuth=0, tolerance=60, maxlag=0.5, n_lags=20)
 
-Vnoea = skg.DirectionalVariogram(sampled_coordinates, sampled_values, azimuth=45, tolerance=60, maxlag=1000, n_lags=20)
+Vnoea = skg.DirectionalVariogram(sampled_coordinates, sampled_values, azimuth=45, tolerance=60, maxlag=0.5, n_lags=20)
 
-Vnowe = skg.DirectionalVariogram(sampled_coordinates, sampled_values, azimuth=135, tolerance=60, maxlag=1000, n_lags=20)
+Vnowe = skg.DirectionalVariogram(sampled_coordinates, sampled_values, azimuth=135, tolerance=60, maxlag=0.5, n_lags=20)
 
 df_direction = pd.DataFrame({'north':Vnorth.describe(), 'east': Veast.describe()})
 
 
-
+"""
 fix, ax = plt.subplots(1,1,figsize=(8,6))
 
 ax.plot(Vnorth.bins, Vnorth.experimental, '.--r', label='North-South')
@@ -194,7 +194,7 @@ ax.plot(Vnowe.bins, Vnowe.experimental, '.--y', label='Nowe-Soea')
 ax.set_xlabel('lag [m]')
 ax.set_ylabel('semi-variance (matheron)')
 plt.legend(loc='upper left')
-
+"""
 
 #%% Create semi-variograms
 
@@ -233,8 +233,6 @@ def fit_and_plot_variogram(variogram, model_func, initial_guess=None):
 North_semivar = fit_and_plot_variogram(Vnorth, models.spherical)
 North_semivar_exp = fit_and_plot_variogram(Vnorth, models.exponential)
 North_semivar_gauss = fit_and_plot_variogram(Vnorth, models.gaussian)
-#North_semivar_matern = fit_and_plot_variogram(Vnorth, models.matern)
-
 
 East_semivar = fit_and_plot_variogram(Veast, models.spherical)
 East_semivar_exp = fit_and_plot_variogram(Veast, models.exponential)
@@ -252,7 +250,7 @@ Nowe_semivar_gauss = fit_and_plot_variogram(Vnowe, models.gaussian)
 
 
 #%% Plot back semivariograms
-
+"""
 # North south
 fix, ax = plt.subplots(1,1,figsize=(8,6))
 
@@ -282,26 +280,28 @@ plt.legend(loc='upper left')
 
 # From what we can see. The spherical semivariogram hits the best in most cases
 # overall. We are still going to use a grid search to find optimal params
-
+"""
 
 
 fix, ax = plt.subplots(1,1,figsize=(8,6))
 
 ax.plot(Vnorth.bins, Vnorth.experimental, '.--r', label='North-South')
 ax.plot(Veast.bins, Veast.experimental, '.--b', label='East-West')
-# ax.plot(Vnoea.bins, Vnoea.experimental, '.--g', label='Noea-Sowe')
-# ax.plot(Vnowe.bins, Vnowe.experimental, '.--y', label='Nowe-Soea')
+ax.plot(Vnoea.bins, Vnoea.experimental, '.--g', label='Noea-Sowe')
+ax.plot(Vnowe.bins, Vnowe.experimental, '.--y', label='Nowe-Soea')
 
 ax.plot(North_semivar[0], North_semivar[1], '-r', label='North semivar')
 ax.plot(East_semivar[0], East_semivar[1], '-b', label='North semivar')
-# ax.plot(Noea_semivar[0], Noea_semivar[1], '-g', label='North semivar')
-# ax.plot(Nowe_semivar[0], Nowe_semivar[1], '-y', label='North semivar')
+ax.plot(Noea_semivar[0], Noea_semivar[1], '-g', label='North semivar')
+ax.plot(Nowe_semivar[0], Nowe_semivar[1], '-y', label='North semivar')
 
 
 ax.set_xlabel('lag [m]')
 ax.set_ylabel('semi-variance (matheron)')
 plt.legend(loc='upper left')
 
+
+Vnorth.pair_field(plt.gca())
 
 
 
